@@ -151,8 +151,8 @@ class OllamaChatInvoker(AbstractOllamaInvoker):
         for message in messages:
             if message["role"] not in {"system", "user", "assistant"}:
                 logger.warning(
-                    "Ollama chat invoker received a message with unknown role {role};"
-                    "changed to \"user\"",
+                    "Ollama chat invoker received a message with unknown role \"{role}\"; "
+                    "changed to role \"user\"",
                     role=message["role"],
                 )
                 message["role"] = "user"
