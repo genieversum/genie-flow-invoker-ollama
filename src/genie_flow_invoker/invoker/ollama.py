@@ -1,3 +1,4 @@
+import json
 from abc import ABC
 from hashlib import md5
 from http import HTTPStatus
@@ -8,7 +9,7 @@ from genie_flow_invoker import GenieInvoker
 from genie_flow_invoker.utils import get_config_value
 from loguru import logger
 import ollama
-from ollama import Client, GenerateResponse, ChatResponse
+from ollama import Client, GenerateResponse, ChatResponse, EmbedResponse
 import yaml
 
 
@@ -168,3 +169,18 @@ class OllamaChatInvoker(AbstractOllamaInvoker):
             message_hash=md5(result.message.content.encode('utf-8')).hexdigest(),
         )
         return result.message.content
+
+
+class OllamaEmbedInvoker(AbstractOllamaInvoker):
+
+    def invoke(self, content: str) -> str:
+        result: EmbedResponse = self.call_with_backoff(
+            self.ollama_client.embed,
+            model=self.model,
+            input=content,
+        )
+        logger.info(
+            "Ollama Embed Invoker completed successfully",
+            **result.model_dump(),
+        )
+        return json.dumps(result.embeddings[0])
