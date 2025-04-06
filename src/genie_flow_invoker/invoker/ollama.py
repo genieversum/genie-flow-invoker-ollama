@@ -19,6 +19,7 @@ class AbstractOllamaInvoker(GenieInvoker, ABC):
             self,
             ollama_client: Client,
             model: str,
+            output: str,
             backoff_max_time: int,
             backoff_max_tries: int,
     ):
@@ -27,11 +28,13 @@ class AbstractOllamaInvoker(GenieInvoker, ABC):
 
         :param ollama_client: the Ollama client instance to use
         :param model: the model to pass to Ollama instance
+        :param output: the output format to pass to Ollama instance
         :param backoff_max_time: maximum time in seconds to backoff every retry
         :param backoff_max_tries: maximum number of times to backoff
         """
         self.ollama_client = ollama_client
         self.model = model
+        self.output = output
         self.backoff_max_time = backoff_max_time
         self.backoff_max_tries = backoff_max_tries
 
@@ -58,6 +61,13 @@ class AbstractOllamaInvoker(GenieInvoker, ABC):
                 "OLLAMA_MODEL",
                 "model",
                 "Model to use",
+            ),
+            output=get_config_value(
+                config,
+                "OLLAMA_OUTPUT",
+                "output",
+                "Output format to use",
+                "",
             ),
             backoff_max_time = get_config_value(
                 config,
@@ -121,6 +131,7 @@ class OllamaGenerateInvoker(AbstractOllamaInvoker):
         result: GenerateResponse = self.call_with_backoff(
             self.ollama_client.generate,
             model=self.model,
+            output=self.output,
             prompt=content,
         )
 
@@ -160,6 +171,7 @@ class OllamaChatInvoker(AbstractOllamaInvoker):
         result: ChatResponse = self.call_with_backoff(
             self.ollama_client.chat,
             model=self.model,
+            output=self.output,
             messages=messages,
         )
 
