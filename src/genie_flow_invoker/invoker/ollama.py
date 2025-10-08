@@ -127,12 +127,30 @@ class AbstractOllamaInvoker(GenieInvoker, ABC):
 
 class OllamaGenerateInvoker(AbstractOllamaInvoker):
 
+
     def invoke(self, content: str) -> str:
+        
+        try:
+            prompt_with_images = yaml.safe_load(content)
+        except yaml.YAMLError as e:
+            logger.debug(
+                "Cannot parse the following content as YAML. "
+                "Assuming this is a sole user message. '{content}'",
+                content=content,
+            )
+            prompt = content
+            images = None
+        else:
+            prompt = prompt_with_images["prompt"]
+            images = prompt_with_images["images"]
+
+
         result: GenerateResponse = self.call_with_backoff(
             self.ollama_client.generate,
             model=self.model,
             format=self.format,
-            prompt=content,
+            prompt=prompt,
+            images=images,
         )
 
         logger.info(
