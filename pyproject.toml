@@ -32,7 +32,7 @@ classifiers=[
 ]
 dependencies=[
     "loguru~=0.7",
-    "genie-flow-invoker~=0.7.0",
+    "genie-flow-invoker",
     "ollama~=0.4",
     "PyYAML~=6.0",
     "backoff~=2.2"
