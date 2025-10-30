@@ -3,7 +3,7 @@ from abc import ABC
 from hashlib import md5
 from http import HTTPStatus
 import httpx
-from typing import Callable
+from typing import Callable, Optional
 
 import backoff
 from genie_flow_invoker import GenieInvoker
