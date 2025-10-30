@@ -2,6 +2,7 @@ import json
 from abc import ABC
 from hashlib import md5
 from http import HTTPStatus
+import httpx
 from typing import Callable
 
 import backoff
@@ -11,6 +12,30 @@ from loguru import logger
 import ollama
 from ollama import Client, GenerateResponse, ChatResponse, EmbedResponse
 import yaml
+
+
+_OLLAMA_CLIENT: Optional[Client] = None
+
+
+def _get_ollama_client(config) -> Client:
+    global _OLLAMA_CLIENT
+    if _OLLAMA_CLIENT is None:
+        ollama_url = get_config_value(
+            config,
+            "OLLAMA_URL",
+            "ollama_url",
+            "URL for the Ollama endpoint",
+        )
+
+        http_client = httpx.Client(
+            limits=httpx.Limits(max_connections=1000, max_keepalive_connections=1000),
+            timeout=300.0,
+        )
+
+        _OLLAMA_CLIENT = Client(host=ollama_url, client=http_client)
+        logger.info("Created shared Ollama client for {url}", url=ollama_url)
+
+    return _OLLAMA_CLIENT
 
 
 class AbstractOllamaInvoker(GenieInvoker, ABC):
@@ -39,23 +64,9 @@ class AbstractOllamaInvoker(GenieInvoker, ABC):
         self.backoff_max_tries = backoff_max_tries
 
     @classmethod
-    def _create_client(cls, config: dict) -> Client:
-        ollama_url = get_config_value(
-            config,
-            "OLLAMA_URL",
-            "ollama_url",
-            "URL for the Ollama endpoint",
-        )
-        logger.info(
-            "Creating Ollama client for endpoint {ollama_url}",
-            ollama_url=ollama_url,
-        )
-        return Client(ollama_url)
-
-    @classmethod
     def from_config(cls, config: dict) -> "AbstractOllamaInvoker":
         return cls(
-            ollama_client=cls._create_client(config),
+            ollama_client=_get_ollama_client(config),
             model=get_config_value(
                 config,
                 "OLLAMA_MODEL",
@@ -180,8 +191,8 @@ class OllamaChatInvoker(AbstractOllamaInvoker):
         for message in messages:
             if message["role"] not in {"system", "user", "assistant"}:
                 logger.warning(
-                    "Ollama chat invoker received a message with unknown role {role};"
-                    "changed to \"user\"",
+                    "Ollama chat invoker received a message with unknown role \"{role}\"; "
+                    "changed to role \"user\"",
                     role=message["role"],
                 )
                 message["role"] = "user"
