@@ -27,12 +27,11 @@ def _get_ollama_client(config) -> Client:
             "URL for the Ollama endpoint",
         )
 
-        http_client = httpx.Client(
+        _OLLAMA_CLIENT = Client(
+            host=ollama_url,
             limits=httpx.Limits(max_connections=1000, max_keepalive_connections=1000),
             timeout=300.0,
         )
-
-        _OLLAMA_CLIENT = Client(host=ollama_url, client=http_client)
         logger.info("Created shared Ollama client for {url}", url=ollama_url)
 
     return _OLLAMA_CLIENT
