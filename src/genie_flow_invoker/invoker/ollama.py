@@ -212,15 +212,28 @@ class OllamaChatInvoker(AbstractOllamaInvoker):
 
 
 class OllamaEmbedInvoker(AbstractOllamaInvoker):
+    """
+    Embedding of the content. If content is JSON-parsable as a list, then
+    that list is passed for batch-embedding. In that case, the result will
+    also be a list of embeddings. If the content is just a string, then
+    only the embedding of that string is returned.
+    """
 
     def invoke(self, content: str) -> str:
+        try:
+            content_parsed = json.loads(content)
+        except json.JSONDecodeError as e:
+            content_parsed = content
+
         result: EmbedResponse = self.call_with_backoff(
             self.ollama_client.embed,
             model=self.model,
-            input=content,
+            input=content_parsed,
         )
         logger.info(
             "Ollama Embed Invoker completed successfully",
             **result.model_dump(),
         )
+        if isinstance(content_parsed, list):
+            return json.dumps(result.embeddings)
         return json.dumps(result.embeddings[0])
